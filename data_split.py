@@ -2,10 +2,6 @@ import numpy as np
 import pandas as pd
 import math
 
-def k_fold_split(df : pd.DataFrame, k : int, random_state : np.random.Generator = None) -> tuple[pd.DataFrame, pd.DataFrame]:
-    [(train_df, test_df)] = k_fold_n_splits(df, k, n=1, random_state=random_state)
-    return train_df, test_df
-
 def __shuffled_df_copy__(df : pd.DataFrame, random_state : np.random.Generator) -> pd.DataFrame:
     df = df.copy()
     df = df.sample(frac=1) if random_state is None \
@@ -52,6 +48,10 @@ def __generate_n_splits__(df : pd.DataFrame, k : int, folds : list[pd.DataFrame]
         splits.append((train_df, test_df))
     
     return splits
+
+def k_fold_split(df : pd.DataFrame, k : int, random_state : np.random.Generator = None) -> tuple[pd.DataFrame, pd.DataFrame]:
+    [(train_df, test_df)] = k_fold_n_splits(df, k, n=1, random_state=random_state)
+    return train_df, test_df
 
 def k_fold_n_splits(df : pd.DataFrame, k : int, n : int = None, random_state : np.random.Generator = None) -> list[tuple[pd.DataFrame, pd.DataFrame]]:    
     folds = __generate_k_folds__(df, k, random_state)
