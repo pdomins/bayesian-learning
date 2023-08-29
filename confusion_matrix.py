@@ -62,11 +62,22 @@ def calculate_per_label_confusion_matrix_from_confusion_matrix(confusion_matrix 
         per_label_conf_mats[possible_out_label] = curr_label_conf_mat
     return per_label_conf_mats
 
-def calculate_confusion_matrix_correct(confusion_matrix : pd.DataFrame) -> float:
+def count_total_samples_from_confusion_matrix(confusion_matrix : pd.DataFrame) -> int:
+    return confusion_matrix.values.sum()
+
+def calculate_confusion_matrix_correct(confusion_matrix : pd.DataFrame) -> int:
     return np.diag(confusion_matrix).sum()
 
-def calculate_confusion_matrix_error(confusion_matrix : pd.DataFrame) -> float:
-    total_samples   = confusion_matrix.values.sum()
+def __confusion_matrix_error_by_complement__(total_samples : int, confusion_matrix : pd.DataFrame):
     correct_samples = calculate_confusion_matrix_correct(confusion_matrix)
     error           = (total_samples - correct_samples)
     return error
+
+def calculate_confusion_matrix_error(confusion_matrix : pd.DataFrame) -> int:
+    total_samples = count_total_samples_from_confusion_matrix(confusion_matrix)
+    return __confusion_matrix_error_by_complement__(total_samples, confusion_matrix)
+
+def calculate_confusion_matrix_error_rate(confusion_matrix : pd.DataFrame) -> float:
+    total_samples = count_total_samples_from_confusion_matrix(confusion_matrix)
+    error         = __confusion_matrix_error_by_complement__(total_samples, confusion_matrix)
+    return error / total_samples
