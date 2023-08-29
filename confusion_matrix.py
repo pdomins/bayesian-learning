@@ -21,10 +21,13 @@ def calculate_confusion_matrix(possible_out_labels : np.ndarray, predicted : dic
     return conf_mat_df
 
 def calculate_relative_confusion_matrix(possible_out_labels : np.ndarray, predicted : dict[Any, Any], expected : dict[Any, Any]) -> pd.DataFrame:
-    conf_mat_df     = calculate_confusion_matrix(possible_out_labels, predicted, expected)
-    real_count      = conf_mat_df.sum(axis='columns')
+    conf_mat_df = calculate_confusion_matrix(possible_out_labels, predicted, expected)
+    return calculate_relative_confusion_matrix_from_confusion_matrix(conf_mat_df)
+
+def calculate_relative_confusion_matrix_from_confusion_matrix(confusion_matrix : pd.DataFrame) -> pd.DataFrame:
+    real_count      = confusion_matrix.sum(axis='columns')
     real_count      = real_count.replace(0, 1)
-    rel_conf_mat_df = conf_mat_df.div(real_count, axis='index')
+    rel_conf_mat_df = confusion_matrix.div(real_count, axis='index')
     return rel_conf_mat_df
 
 def calculate_true_positives_from_confusion_matrix(confusion_matrix : pd.DataFrame, positive_label : Any) -> float:
