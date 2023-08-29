@@ -45,13 +45,25 @@ def __init_per_label_confusion_matrix__() -> pd.DataFrame:
                         }, index=["P", "F"])
 
 def calculate_per_label_confusion_matrix(possible_out_labels : np.ndarray, predicted : dict[Any, Any], expected : dict[Any, Any]) -> pd.DataFrame:
-    conf_mat                    = calculate_confusion_matrix(possible_out_labels, predicted, expected)
+    conf_mat = calculate_confusion_matrix(possible_out_labels, predicted, expected)
+    return calculate_per_label_confusion_matrix_from_confusion_matrix(conf_mat)
+
+def calculate_per_label_confusion_matrix_from_confusion_matrix(confusion_matrix : pd.DataFrame) -> pd.DataFrame:
     per_label_conf_mats         = dict()
-    for possible_out_label in possible_out_labels:
+    for possible_out_label in confusion_matrix.columns:
         curr_label_conf_mat = __init_per_label_confusion_matrix__()
-        curr_label_conf_mat.loc["P"]["P"] = calculate_true_positives_from_confusion_matrix(conf_mat, possible_out_label)
-        curr_label_conf_mat.loc["F"]["P"] = calculate_false_positives_from_confusion_matrix(conf_mat, possible_out_label)
-        curr_label_conf_mat.loc["P"]["F"] = calculate_false_negatives_from_confusion_matrix(conf_mat, possible_out_label)
-        curr_label_conf_mat.loc["F"]["F"] = calculate_true_negatives_from_confusion_matrix(conf_mat, possible_out_label)
+        curr_label_conf_mat.loc["P"]["P"] = calculate_true_positives_from_confusion_matrix(confusion_matrix, possible_out_label)
+        curr_label_conf_mat.loc["F"]["P"] = calculate_false_positives_from_confusion_matrix(confusion_matrix, possible_out_label)
+        curr_label_conf_mat.loc["P"]["F"] = calculate_false_negatives_from_confusion_matrix(confusion_matrix, possible_out_label)
+        curr_label_conf_mat.loc["F"]["F"] = calculate_true_negatives_from_confusion_matrix(confusion_matrix, possible_out_label)
         per_label_conf_mats[possible_out_label] = curr_label_conf_mat
     return per_label_conf_mats
+
+def calculate_confusion_matrix_correct(confusion_matrix : pd.DataFrame) -> float:
+    return np.diag(confusion_matrix).sum()
+
+def calculate_confusion_matrix_error(confusion_matrix : pd.DataFrame) -> float:
+    total_samples   = confusion_matrix.values.sum()
+    correct_samples = calculate_confusion_matrix_correct(confusion_matrix)
+    error           = (total_samples - correct_samples)
+    return error
