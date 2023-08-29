@@ -81,3 +81,29 @@ def calculate_confusion_matrix_error_rate(confusion_matrix : pd.DataFrame) -> fl
     total_samples = count_total_samples_from_confusion_matrix(confusion_matrix)
     error         = __confusion_matrix_error_by_complement__(total_samples, confusion_matrix)
     return error / total_samples
+    
+def metrics(per_label_conf_mats):
+    metrics_per_label = {}
+
+    for label, label_conf_mat in per_label_conf_mats.items():
+        TP = calculate_true_positives_from_confusion_matrix(label_conf_mat, "P")
+        FP = calculate_false_positives_from_confusion_matrix(label_conf_mat, "P")
+        FN = calculate_false_negatives_from_confusion_matrix(label_conf_mat, "P")
+        TN = calculate_true_negatives_from_confusion_matrix(label_conf_mat, "P")
+        
+        precision = TP / (TP + FP)
+        recall = TP / (TP + FN)
+        f1_score = 2 * (precision * recall) / (precision + recall)
+        accuracy = (TP + TN) / (TP + TN + FP + FN)
+        
+        metrics_per_label[label] = {
+            "TP": TP,
+            "FP": FP,
+            "FN": FN,
+            "TN": TN,
+            "Precision": precision,
+            "Recall": recall,
+            "F1 Score": f1_score,
+            "Accuracy": accuracy
+        }
+    return metrics_per_label
