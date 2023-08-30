@@ -19,11 +19,11 @@ def compute_classification_error_from_df(df : pd.DataFrame, out_label_col : str,
     df_err            = compute_classification_error(df_input, df_out_label_dict, predict, model)
     return df_err
 
-def k_fold_cross_validation(df : pd.DataFrame, out_label_col : str, train : Callable[[pd.DataFrame], Any], predict : Callable[[pd.Series, Any], Any], k : int, random_state : np.random.Generator = None) -> list[dict[str, Any]]:
+def k_fold_cross_validation(df : pd.DataFrame, possible_out_labels : np.ndarray, out_label_col : str, train : Callable[[pd.DataFrame, np.ndarray], Any], predict : Callable[[pd.Series, Any], Any], k : int, random_state : np.random.Generator = None) -> list[dict[str, Any]]:
     k_splits = k_fold_n_splits(df, k, random_state=random_state)
     k_splits_dict_list = []
     for train_df, test_df in k_splits:
-        model     = train(train_df)
+        model     = train(train_df, possible_out_labels)
         train_err = compute_classification_error_from_df(train_df, out_label_col, predict, model)
         test_err  = compute_classification_error_from_df(test_df, out_label_col, predict, model)
         curr_split_dict = {
