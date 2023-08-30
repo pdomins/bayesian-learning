@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from typing import Any
+from sklearn.metrics import auc
 
 def __init_confusion_matrix_rows__(out_labels : np.ndarray) -> dict[Any, np.ndarray] :
     out_labels_size = out_labels.shape[0]
@@ -138,7 +139,7 @@ def calculate_roc_confusion_matrices(prediction_probabilities : dict[Any, dict[s
         })
     return conf_mats
 
-def calculate_roc_positive_rates(roc_confusion_matrices : list[dict[str, Any]]):
+def calculate_roc_positive_rates(roc_confusion_matrices : list[dict[str, Any]]) -> list[dict[str, Any]]:
     positive_rates = []
     for i in range(len(roc_confusion_matrices)):
         conf_mat = roc_confusion_matrices[i]["confusion_matrix"]
@@ -150,3 +151,8 @@ def calculate_roc_positive_rates(roc_confusion_matrices : list[dict[str, Any]]):
             "FPR"       : FPR
         })
     return positive_rates
+
+# TODO: Revisar si esta permitido usar AUC de Sklearn
+def calculate_auc_from_positive_rates(positive_rates : list[dict[str, Any]]) -> float:
+    FPRs, TPRs = np.array(list(map(lambda pr : pr["FPR"], positive_rates))), np.array(list(map(lambda pr : pr["TPR"], positive_rates)))
+    return auc(FPRs, TPRs)
