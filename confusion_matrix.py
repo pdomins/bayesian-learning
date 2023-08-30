@@ -145,10 +145,14 @@ def calculate_roc_positive_rates(roc_confusion_matrices : list[dict[str, Any]]) 
         conf_mat = roc_confusion_matrices[i]["confusion_matrix"]
         TPR = calculate_true_positive_rate_from_confusion_matrix(conf_mat, "P")
         FPR = calculate_false_positive_rate_from_confusion_matrix(conf_mat, "P")
+        conf_mat_metrics = metrics({
+            "metrics" : conf_mat
+        })
         positive_rates.append({
             "threshold" : roc_confusion_matrices[i]["threshold"],
             "TPR"       : TPR,
-            "FPR"       : FPR
+            "FPR"       : FPR,
+            "metrics"   : conf_mat_metrics["metrics"] 
         })
     return positive_rates
 
@@ -156,3 +160,26 @@ def calculate_roc_positive_rates(roc_confusion_matrices : list[dict[str, Any]]) 
 def calculate_auc_from_positive_rates(positive_rates : list[dict[str, Any]]) -> float:
     FPRs, TPRs = np.array(list(map(lambda pr : pr["FPR"], positive_rates))), np.array(list(map(lambda pr : pr["TPR"], positive_rates)))
     return auc(FPRs, TPRs)
+
+def calculate_roc_positive_rates_uniquie(roc_positive_rates : list[dict[str, Any]]) -> dict[dict[str, Any]]:
+    positive_rates = dict()
+    for i in range(len(roc_positive_rates)):
+        TPR = roc_positive_rates[i]["TPR"]
+        FPR = roc_positive_rates[i]["FPR"]
+        curr_coordinate = (FPR, TPR)
+        if curr_coordinate not in positive_rates:
+            positive_rates[curr_coordinate] = {
+                "threshold" : {
+                    "min" : roc_positive_rates[i]["threshold"],
+                    "max" : roc_positive_rates[i]["threshold"]
+                },
+                "TPR"     : TPR,
+                "FPR"     : FPR,
+                "metrics" : roc_positive_rates[i]["metrics"]
+            }
+        else:
+            if roc_positive_rates[i]["threshold"] > positive_rates[curr_coordinate]["threshold"]["max"]:
+                positive_rates[curr_coordinate]["threshold"]["max"] = roc_positive_rates[i]["threshold"]
+            elif roc_positive_rates[i]["threshold"] < positive_rates[curr_coordinate]["threshold"]["min"]:
+                positive_rates[curr_coordinate]["threshold"]["min"] = roc_positive_rates[i]["threshold"]
+    return positive_rates
