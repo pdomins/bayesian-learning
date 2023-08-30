@@ -42,10 +42,20 @@ def calculate_false_negatives_from_confusion_matrix(confusion_matrix : pd.DataFr
 def calculate_true_negatives_from_confusion_matrix(confusion_matrix : pd.DataFrame, positive_label : Any) -> float:
     return confusion_matrix.drop([positive_label], axis="index").drop([positive_label], axis="columns").values.sum()
 
+def calculate_true_positive_rate_from_confusion_matrix(confusion_matrix : pd.DataFrame, positive_label : Any) -> float:
+    TP = calculate_true_positives_from_confusion_matrix(confusion_matrix, positive_label)
+    FN = calculate_false_negatives_from_confusion_matrix(confusion_matrix, positive_label)
+    return TP / (TP + FN)
+
+def calculate_false_positive_rate_from_confusion_matrix(confusion_matrix : pd.DataFrame, positive_label : Any) -> float:
+    FP = calculate_false_positives_from_confusion_matrix(confusion_matrix, positive_label)
+    TN = calculate_true_negatives_from_confusion_matrix(confusion_matrix, positive_label)
+    return FP / (FP + TN)
+
 def __init_per_label_confusion_matrix__() -> pd.DataFrame:
     return pd.DataFrame(data={ "P" : np.zeros(2),
-                               "F" : np.zeros(2)
-                        }, index=["P", "F"])
+                               "N" : np.zeros(2)
+                        }, index=["P", "N"])
 
 def calculate_per_label_confusion_matrix(possible_out_labels : np.ndarray, predicted : dict[Any, Any], expected : dict[Any, Any]) -> pd.DataFrame:
     conf_mat = calculate_confusion_matrix(possible_out_labels, predicted, expected)
@@ -56,9 +66,9 @@ def calculate_per_label_confusion_matrix_from_confusion_matrix(confusion_matrix 
     for possible_out_label in confusion_matrix.columns:
         curr_label_conf_mat = __init_per_label_confusion_matrix__()
         curr_label_conf_mat.loc["P"]["P"] = calculate_true_positives_from_confusion_matrix(confusion_matrix, possible_out_label)
-        curr_label_conf_mat.loc["F"]["P"] = calculate_false_positives_from_confusion_matrix(confusion_matrix, possible_out_label)
-        curr_label_conf_mat.loc["P"]["F"] = calculate_false_negatives_from_confusion_matrix(confusion_matrix, possible_out_label)
-        curr_label_conf_mat.loc["F"]["F"] = calculate_true_negatives_from_confusion_matrix(confusion_matrix, possible_out_label)
+        curr_label_conf_mat.loc["N"]["P"] = calculate_false_positives_from_confusion_matrix(confusion_matrix, possible_out_label)
+        curr_label_conf_mat.loc["P"]["N"] = calculate_false_negatives_from_confusion_matrix(confusion_matrix, possible_out_label)
+        curr_label_conf_mat.loc["N"]["N"] = calculate_true_negatives_from_confusion_matrix(confusion_matrix, possible_out_label)
         per_label_conf_mats[possible_out_label] = curr_label_conf_mat
     return per_label_conf_mats
 
@@ -107,3 +117,36 @@ def metrics(per_label_conf_mats):
             "Accuracy": accuracy
         }
     return metrics_per_label
+
+
+def calculate_roc_confusion_matrices(prediction_probabilities : dict[Any, dict[str, Any]], expected : dict[Any, Any], thresholds : np.ndarray, positive_label : Any = "P", negative_label : Any = "N") -> list[dict[str, Any]]:
+    conf_mats = []
+    for threshold in thresholds:
+        positive_prediction_probas = dict()
+        for prediction_proba_idx in prediction_probabilities.keys():
+            proba_positive_scaled = prediction_probabilities[prediction_proba_idx][positive_label]
+            proba_negative_scaled = prediction_probabilities[prediction_proba_idx][negative_label]
+            true_positive_proba   = proba_positive_scaled / (proba_positive_scaled + proba_negative_scaled)
+            positive_prediction_probas[prediction_proba_idx] = true_positive_proba
+        predicted = dict()
+        for pos_predict_proba_idx in positive_prediction_probas.keys():
+            predicted[pos_predict_proba_idx] = positive_label if positive_prediction_probas[pos_predict_proba_idx] >= threshold \
+                                          else negative_label
+        conf_mats.append({
+            "threshold"        : threshold,
+            "confusion_matrix" : calculate_confusion_matrix(np.array([positive_label, negative_label]), predicted, expected)
+        })
+    return conf_mats
+
+def calculate_roc_positive_rates(roc_confusion_matrices : list[dict[str, Any]]):
+    positive_rates = []
+    for i in range(len(roc_confusion_matrices)):
+        conf_mat = roc_confusion_matrices[i]["confusion_matrix"]
+        TPR = calculate_true_positive_rate_from_confusion_matrix(conf_mat, "P")
+        FPR = calculate_false_positive_rate_from_confusion_matrix(conf_mat, "P")
+        positive_rates.append({
+            "threshold" : roc_confusion_matrices[i]["threshold"],
+            "TPR"       : TPR,
+            "FPR"       : FPR
+        })
+    return positive_rates
