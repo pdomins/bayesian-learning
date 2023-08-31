@@ -30,7 +30,7 @@ def add_roc_plot_from_positive_rates(positive_rates : list[dict[str, Any]], anno
     else:
         plt.plot(FPRs, TPRs, color=color)
     plt.plot(FPRs, TPRs, marker='o', color=color)
-    plt.vlines(x = 0, ymin=0, ymax=TPRs.min(), colors=color)
+    plt.plot([0, FPRs.min()], [0, TPRs.min()], color=color)
     if annotate:
         for i, j in zip(FPRs, TPRs):
             plt.annotate('(%.2g, %.2g)' % (i, j), xy=(i, j), textcoords='offset points', xytext=(0,7), ha='center', fontsize=font_size, color=color)
